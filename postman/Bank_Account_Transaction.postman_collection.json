@@ -1,0 +1,853 @@
+{
+  "info": {
+    "_postman_id": "9c6053fb-118a-4cd4-a584-19ac3b7a8209",
+    "name": "Bank Account and Transaction Management API",
+    "description": "Educational bank-account API. Choose the Admin or Customer login before running that role’s requests. Transfers update both balances and ledger rows atomically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accountTypeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accountId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "destinationAccountId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "recipientAccountId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newAccountId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transactionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transferId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Saves short-lived access and refresh tokens to the selected environment.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try { const j=pm.response.json(); if(j.accessToken) pm.environment.set('accessToken',j.accessToken); if(j.refreshToken) pm.environment.set('refreshToken',j.refreshToken); } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Saves short-lived access and refresh tokens to the selected environment.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{customerPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try { const j=pm.response.json(); if(j.accessToken) pm.environment.set('accessToken',j.accessToken); if(j.refreshToken) pm.environment.set('refreshToken',j.refreshToken); } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/register",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"New Demo Customer\",\n  \"email\": \"new.customer+{{$timestamp}}@example.test\",\n  \"password\": \"{{customerPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Current profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "Refresh and rotate tokens",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const oldToken=pm.environment.get('refreshToken');",
+                  "try { const j=pm.response.json(); if(j.accessToken) pm.environment.set('accessToken',j.accessToken); if(j.refreshToken) { pm.environment.set('oldRefreshToken',oldToken); pm.environment.set('refreshToken',j.refreshToken); } } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout and revoke refresh token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/logout",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Admin user management",
+      "item": [
+        {
+          "name": "List users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Create user (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"New Admin Managed User\",\n  \"email\": \"managed+{{$timestamp}}@example.test\",\n  \"password\": \"{{customerPassword}}\",\n  \"role\": \"customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try { const j=pm.response.json(); if(j.userId!==undefined) pm.environment.set('userId',String(j.userId)); } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update user role or active status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Account types",
+      "item": [
+        {
+          "name": "List account types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/account-types?page=1&limit=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {const j=pm.response.json(),a=j.data||[];if(a[0])pm.environment.set('accountTypeId',String(a[0].accountTypeId));}catch(e){}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get account type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/account-types/{{accountTypeId}}"
+          }
+        },
+        {
+          "name": "Create account type (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/account-types",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeName\": \"Demo Saver {{$timestamp}}\",\n  \"minimumBalance\": \"100.00\",\n  \"interestRate\": 1.25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try { const j=pm.response.json(); if(j.accountTypeId!==undefined) pm.environment.set('accountTypeId',String(j.accountTypeId)); } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update account type (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/account-types/{{accountTypeId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interestRate\": 1.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Accounts",
+      "item": [
+        {
+          "name": "List accounts (Admin captures sample IDs)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/accounts?page=1&limit=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {const j=pm.response.json(),a=j.data||[];if(a[0])pm.environment.set('accountId',String(a[0].accountId));if(a[1])pm.environment.set('destinationAccountId',String(a[1].accountId));if(a[2])pm.environment.set('recipientAccountId',String(a[2].accountId));} catch(e){}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List my accounts (Customer)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/accounts?page=1&limit=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {const j=pm.response.json(),a=j.data||[];if(a[0])pm.environment.set('accountId',String(a[0].accountId));if(a[1])pm.environment.set('destinationAccountId',String(a[1].accountId));if(a[2])pm.environment.set('recipientAccountId',String(a[2].accountId));} catch(e){}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get account",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/accounts/{{accountId}}"
+          }
+        },
+        {
+          "name": "Create account for signed-in user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/accounts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountTypeId\": \"{{accountTypeId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try { const j=pm.response.json(); if(j.accountId!==undefined) pm.environment.set('newAccountId',String(j.accountId)); } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update account status only",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/accounts/{{accountId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Inactive\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reactivate account when minimum is met",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/accounts/{{accountId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Transactions",
+      "item": [
+        {
+          "name": "List transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/transactions?page=1&limit=20&accountId={{newAccountId}}"
+          }
+        },
+        {
+          "name": "Deposit funds",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/transactions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{newAccountId}}\",\n  \"transactionType\": \"Deposit\",\n  \"amount\": 250.75,\n  \"description\": \"Postman demo deposit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try { const j=pm.response.json(); if(j.transactionId!==undefined) pm.environment.set('transactionId',String(j.transactionId)); } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get transaction",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/transactions/{{transactionId}}"
+          }
+        },
+        {
+          "name": "Account transaction history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/accounts/{{newAccountId}}/transactions?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Withdraw funds",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/transactions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{newAccountId}}\",\n  \"transactionType\": \"Withdrawal\",\n  \"amount\": 50,\n  \"description\": \"Postman demo withdrawal\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try { const j=pm.response.json(); if(j.transactionId!==undefined) pm.environment.set('transactionId',String(j.transactionId)); } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Transfers",
+      "item": [
+        {
+          "name": "List transfers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/transfers?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Transfer between my accounts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/transfers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceAccountId\": \"{{accountId}}\",\n  \"destinationAccountId\": \"{{destinationAccountId}}\",\n  \"amount\": 125.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try { const j=pm.response.json(); if(j.transferId!==undefined) pm.environment.set('transferId',String(j.transferId)); } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get transfer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/transfers/{{transferId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Security and validation examples",
+      "item": [
+        {
+          "name": "Expected 422 - withdrawal exceeds funds",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/transactions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"transactionType\": \"Withdrawal\",\n  \"amount\": 999999999,\n  \"description\": \"Intentional validation demo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Expected 403 - customer reads a different customer account",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/accounts/{{recipientAccountId}}"
+          }
+        },
+        {
+          "name": "Expected 401 - protected request without token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/accounts/{{accountId}}",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Expected 400 - account balance cannot be patched",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/accounts/{{accountId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"balance\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Expected 409 - duplicate registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/register",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Sample Customer\",\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{customerPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete account type (Admin; expected 409 when used)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/account-types/{{accountTypeId}}"
+          }
+        },
+        {
+          "name": "Expected 401 - replay old refresh token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{oldRefreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Expected 403 - customer cannot create an account type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/account-types",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeName\": \"Blocked {{$timestamp}}\",\n  \"minimumBalance\": \"0.00\",\n  \"interestRate\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Expected 422 - withdrawal breaks account minimum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/transactions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{newAccountId}}\",\n  \"transactionType\": \"Withdrawal\",\n  \"amount\": \"200.00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
